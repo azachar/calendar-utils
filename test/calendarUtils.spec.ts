@@ -123,9 +123,76 @@ describe('getWeekViewHeader', () => {
 
   });
 
+  it('get weekViewDays for the given date', () => {
+    const days: WeekDay[] = getWeekViewHeader({
+      viewDate: new Date('2016-06-28'),
+      weekStartsOn: 0,
+      weekViewDays: 5
+    });
+    days.forEach((day: any) => {
+      day.timestamp = day.date.valueOf();
+      delete day.date;
+    });
+    expect(days).to.have.length(5);
+    expect(days).to.deep.equal([{
+      timestamp: new Date('2016-06-26').getTime() + timezoneOffset,
+      isPast: true,
+      isToday: false,
+      isFuture: false,
+      isWeekend: true
+    }, {
+      timestamp: new Date('2016-06-27').getTime() + timezoneOffset,
+      isPast: true,
+      isToday: false,
+      isFuture: false,
+      isWeekend: false
+    }, {
+      timestamp: new Date('2016-06-28').getTime() + timezoneOffset,
+      isPast: false,
+      isToday: true,
+      isFuture: false,
+      isWeekend: false
+    }, {
+      timestamp: new Date('2016-06-29').getTime() + timezoneOffset,
+      isPast: false,
+      isToday: false,
+      isFuture: true,
+      isWeekend: false
+    }, {
+      timestamp: new Date('2016-06-30').getTime() + timezoneOffset,
+      isPast: false,
+      isToday: false,
+      isFuture: true,
+      isWeekend: false
+    }]);
+
+  });
+
 });
 
 describe('getWeekView', () => {
+
+  it('should get weekViewDays only', () => {
+
+    const events: CalendarEvent[] = [{
+      start: new Date('2016-06-27'),
+      end: new Date('2016-06-29'),
+      title: '',
+      color: {primary: '', secondary: ''}
+    }];
+
+    const result: WeekViewEventRow[] = getWeekView({events, viewDate: new Date('2016-06-27'), weekStartsOn: 0, weekViewDays: 5});
+    expect(result).to.deep.equal([{
+      row: [{
+        event: events[0],
+        offset: 1,
+        span: 3,
+        startsBeforeWeek: false,
+        endsAfterWeek: false
+      }]
+    }]);
+
+  });
 
   it('should get the correct span, offset and extends values for events that start within the week', () => {
 

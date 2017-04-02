@@ -128,15 +128,16 @@ function getExcludedDays({startDate, days, excluded}: {startDate: Date, days: nu
 }
 
 function getWeekViewEventSpan(
-  {event, offset, startOfWeek, excluded}: {event: CalendarEvent, offset: number, startOfWeek: Date, excluded: number[]}): number {
+  {event, offset, startOfWeek, excluded, weekViewDays = DAYS_IN_WEEK}:
+  {event: CalendarEvent, offset: number, startOfWeek: Date, excluded: number[], weekViewDays?: number}): number {
   const begin: Date = event.start < startOfWeek ? startOfWeek : event.start;
   let span: number = 1;
   if (event.end) {
     span = differenceInDays(addMinutes(endOfDay(event.end), 1), startOfDay(begin));
   }
   const totalLength: number = offset + span;
-  if (totalLength > DAYS_IN_WEEK) {
-    span = DAYS_IN_WEEK - offset;
+  if (totalLength > weekViewDays) {
+    span = weekViewDays - offset;
   }
   return span - getExcludedDays({startDate: begin, days: span, excluded});
 }
@@ -206,11 +207,11 @@ function getWeekDay({date}: {date: Date}): WeekDay {
   };
 }
 
-export function getWeekViewHeader({viewDate, weekStartsOn, excluded = []}:
-    {viewDate: Date, weekStartsOn: number, excluded?: number[]}): WeekDay[] {
+export function getWeekViewHeader({viewDate, weekStartsOn, excluded = [], weekViewDays = DAYS_IN_WEEK}:
+    {viewDate: Date, weekStartsOn: number, excluded?: number[], weekViewDays?: number}): WeekDay[] {
   const start: Date = startOfWeek(viewDate, {weekStartsOn});
   const days: WeekDay[] = [];
-  for (let i: number = 0; i < DAYS_IN_WEEK; i++) {
+  for (let i: number = 0; i < weekViewDays; i++) {
     const date: Date = addDays(start, i);
     if (!excluded.some(e => date.getDay() === e)) {
       days.push(getWeekDay({date}));
@@ -221,17 +222,16 @@ export function getWeekViewHeader({viewDate, weekStartsOn, excluded = []}:
 
 }
 
-export function getWeekView({events = [], viewDate, weekStartsOn, excluded = []}:
-  {events?: CalendarEvent[], viewDate: Date, weekStartsOn: number, excluded?: number[]})
+export function getWeekView({events = [], viewDate, weekStartsOn, excluded = [], weekViewDays = DAYS_IN_WEEK}:
+  {events?: CalendarEvent[], viewDate: Date, weekStartsOn: number, excluded?: number[], weekViewDays?: number})
   : WeekViewEventRow[] {
 
   if (!events) {
     events = [];
   }
-
   const startOfViewWeek: Date = startOfWeek(viewDate, {weekStartsOn});
   const endOfViewWeek: Date = endOfWeek(viewDate, {weekStartsOn});
-  const maxRange: number = DAYS_IN_WEEK - excluded.length;
+  const maxRange: number = weekViewDays - excluded.length;
 
   const eventsMapped: WeekViewEvent[] = getEventsInPeriod({events, periodStart: startOfViewWeek, periodEnd: endOfViewWeek}).map(event => {
     const offset: number = getWeekViewEventOffset({event, startOfWeek: startOfViewWeek, excluded});
@@ -261,7 +261,7 @@ export function getWeekView({events = [], viewDate, weekStartsOn, excluded = []}
       const otherRowEvents: WeekViewEvent[] = eventsMapped.slice(index + 1).filter(nextEvent => {
         if (
           nextEvent.offset >= rowSpan &&
-          rowSpan + nextEvent.span <= DAYS_IN_WEEK &&
+          rowSpan + nextEvent.span <= weekViewDays &&
           allocatedEvents.indexOf(nextEvent) === -1
         ) {
           nextEvent.offset -= rowSpan;
